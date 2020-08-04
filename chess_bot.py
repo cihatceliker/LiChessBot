@@ -14,7 +14,7 @@ GAP = 80
 SLEEP_BETWEEN_MOVE_CLICKS = 0.01
 SLEEP_TIME_LOGGING_IN = 0.5
 SLEEP_TIME_MATCHING = 3
-TIME_FORMAT = "3+0"
+TIME_FORMAT = "1+0"
 WHITE = "white"
 BLACK = "black"
 
@@ -59,7 +59,7 @@ class LiChessBot():
         print(self.color)
         while True:
             moves, sans, colors = self.find_moves()
-            print(moves, sans, colors)
+            print(moves[-1], sans[-1], colors[-1])
             for i in range(1, len(moves)):
                 if sans[i] in ["O-O", "O-O-O"]:
                     moves[i] = {
