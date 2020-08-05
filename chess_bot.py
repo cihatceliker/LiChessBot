@@ -14,7 +14,7 @@ GAP = 80
 SLEEP_BETWEEN_MOVE_CLICKS = 0.01
 SLEEP_TIME_LOGGING_IN = 0.5
 SLEEP_TIME_MATCHING = 3
-TIME_FORMAT = "1+0"
+TIME_FORMAT = "10+0"
 WHITE = "white"
 BLACK = "black"
 
@@ -27,6 +27,7 @@ class LiChessBot():
         self.engine.set_skill_level(20)
         sleep(SLEEP_TIME_MATCHING)
         self.last_color = WHITE
+        self.last_output = None
 
     def enter_match(self, time_format):
         self.driver.find_element_by_xpath(f'//*[@data-id="{TIME_FORMAT}"]/div').click()
@@ -43,7 +44,6 @@ class LiChessBot():
         self.driver.find_element_by_css_selector(".submit").click()
     
     def find_color(self):
-        # finding the color
         for i in range(len((script := self.request_script())) - len((key:="\"player\":{\""))):
             if script[i:i+len(key)] == key:
                 return {"white": WHITE, "black": BLACK}[script[i+19:i+24]]
@@ -56,10 +56,12 @@ class LiChessBot():
 
     def game_loop(self, time_format):
         self.enter_match(time_format)
-        print(self.color)
         while True:
             moves, sans, colors = self.find_moves()
-            print(moves[-1], sans[-1], colors[-1])
+            output = moves[-1], sans[-1], colors[-1]
+            if output != self.last_output:
+                self.last_output = output
+                print(output)
             for i in range(1, len(moves)):
                 if sans[i] in ["O-O", "O-O-O"]:
                     moves[i] = {
