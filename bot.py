@@ -27,6 +27,7 @@ class LiChessBot():
         self.engine.set_skill_level(20)
         self.last_color = WHITE
         self.last_output = None
+        self.logged_in = False
 
     def enter_match(self, time_format):
         """Starts a game with the given time format."""
@@ -34,7 +35,10 @@ class LiChessBot():
         sleep(SLEEP_TIME_MATCHING)
         self.driver.find_element_by_xpath(f'//*[@data-id="{TIME_FORMAT}"]/div').click()
         sleep(SLEEP_TIME_MATCHING)
-        self.color = self.find_color()
+        # finding the color
+        for i in range(len((script := self.request_script())) - len((key:="\"player\":{\""))):
+            if script[i:i+len(key)] == key:
+                self.color = {"white": WHITE, "black": BLACK}[script[i+19:i+24]]
         self.game_loop()
 
     def login(self):
@@ -45,12 +49,8 @@ class LiChessBot():
         self.driver.find_element_by_xpath('//*[@id="form3-password"]').send_keys(password)
         sleep(SLEEP_TIME_LOGGING_IN)
         self.driver.find_element_by_css_selector(".submit").click()
+        self.logged_in = True
     
-    def find_color(self):
-        for i in range(len((script := self.request_script())) - len((key:="\"player\":{\""))):
-            if script[i:i+len(key)] == key:
-                return {"white": WHITE, "black": BLACK}[script[i+19:i+24]]
-
     def game_loop(self):
         """A game loop. Called after entering a match.
         - Scrape the board configuration.
@@ -65,7 +65,6 @@ class LiChessBot():
             if res:
                 moves, sans, colors = res
             else:
-                print(requests.get2str(self.driver.current_url))
                 print("Game is over!")
                 break
             output = moves[-1], sans[-1], colors[-1]
@@ -96,7 +95,8 @@ class LiChessBot():
         x, y = get_coordinates(sq)
         ac = ActionChains(self.driver)
         elem = self.driver.find_element_by_id("main-wrap")
-        ac.move_to_element(elem).move_by_offset(LEFT_B_X + x * GAP, LEFT_B_Y - y * GAP).click().perform()
+        left_b_y = LEFT_B_Y if not self.logged_in else LEFT_B_Y - GAP
+        ac.move_to_element(elem).move_by_offset(LEFT_B_X + x * GAP, left_b_y - y * GAP).click().perform()
 
     def request_script(self):
         """Sends a get request to scrape the moves on the table."""
@@ -127,6 +127,7 @@ class LiChessBot():
                 for j in range(i + 1, len(script)):
                     if script[j] == "}":
                         ply = script[i:j]
+                        break
                 uci, san = self.find_uci(ply)
                 if not uci or not san:
                     return
@@ -137,8 +138,9 @@ class LiChessBot():
         return moves, sans, colors
 
 
-
 if __name__ == "__main__":
     bot = LiChessBot()
-    #bot.login()
-    bot.enter_match(TIME_FORMAT)
+    while True:
+        bot.login()
+        bot.enter_match(TIME_FORMAT)
+        sleep(3)
