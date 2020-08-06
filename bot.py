@@ -12,9 +12,9 @@ LEFT_B_X = -300
 LEFT_B_Y = 300
 GAP = 80
 SLEEP_TIME_LOGGING_IN = 0.5
-SLEEP_TIME_MATCHING = 2
+SLEEP_TIME_MATCHING = 4
 REQUEST_INTERVAL = 0.01
-TIME_FORMAT = "1+0"
+TIME_FORMAT = "3+0"
 WHITE = "white"
 BLACK = "black"
 
@@ -67,10 +67,6 @@ class LiChessBot():
             else:
                 print("Game is over!")
                 break
-            output = moves[-1], sans[-1], colors[-1]
-            if output != self.last_output:
-                self.last_output = output
-                print(output)
             for i in range(1, len(moves)):
                 if sans[i] in ["O-O", "O-O-O"]:
                     moves[i] = {
@@ -79,11 +75,19 @@ class LiChessBot():
                         "e8a8": "e8c8",
                         "e1h1": "e1g1"
                     }[moves[i]]
+            output = [moves[-1], sans[-1], colors[-1]]
             if self.color == colors[-1]:
                 self.engine.set_position(moves[1:])
                 move = self.engine.get_best_move()
                 self.click_to_coordinate(move[:2])
                 self.click_to_coordinate(move[2:])
+                output.append(move)
+                # promotion
+                if str.islower(move[0]) and (not str.islower(move[-1]) and str.isalpha(move[-1])):
+                    self.click_to_coordinate(move[2:])
+            if output != self.last_output:
+                self.last_output = output
+                print(output)
         
     def click_to_coordinate(self, sq):
         """Takes a coordinate of a square in a form like "e2", "b7" and clicks on it."""
@@ -139,8 +143,9 @@ class LiChessBot():
 
 
 if __name__ == "__main__":
-    bot = LiChessBot()
     while True:
+        bot = LiChessBot()
         bot.login()
         bot.enter_match(TIME_FORMAT)
-        sleep(3)
+        bot.driver.close()
+        sleep(10)
