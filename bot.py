@@ -11,13 +11,18 @@ from login_info import username, password
 LEFT_B_X = -300
 LEFT_B_Y = 300
 GAP = 80
-SLEEP_TIME_LOGGING_IN = 0.5
-SLEEP_TIME_MATCHING = 4
-REQUEST_INTERVAL = 0.01
+SLEEP_TIME_LOGGING_IN = 2
+SLEEP_TIME_MATCHING = 5
+REQUEST_INTERVAL = 1
 TIME_FORMAT = "3+0"
 WHITE = "white"
 BLACK = "black"
 
+
+#TODO: premove
+#TODO: only promotes to a queen
+#TODO: get best move based on a time constraint
+#TODO: look up to stockfish api
 
 class LiChessBot():
 
@@ -25,7 +30,6 @@ class LiChessBot():
         self.driver = webdriver.Firefox()
         self.engine = Stockfish()
         self.engine.set_skill_level(20)
-        self.last_color = WHITE
         self.last_output = None
         self.logged_in = False
 
@@ -39,7 +43,7 @@ class LiChessBot():
         for i in range(len((script := self.request_script())) - len((key:="\"player\":{\""))):
             if script[i:i+len(key)] == key:
                 self.color = {"white": WHITE, "black": BLACK}[script[i+19:i+24]]
-        self.game_loop()
+        self._game_loop()
 
     def login(self):
         self.driver.get('https://lichess.org/login')
@@ -51,7 +55,7 @@ class LiChessBot():
         self.driver.find_element_by_css_selector(".submit").click()
         self.logged_in = True
     
-    def game_loop(self):
+    def _game_loop(self):
         """A game loop. Called after entering a match.
         - Scrape the board configuration.
         - Check if the game is over.
@@ -83,7 +87,9 @@ class LiChessBot():
                 self.click_to_coordinate(move[2:])
                 output.append(move)
                 # promotion
-                if str.islower(move[0]) and (not str.islower(move[-1]) and str.isalpha(move[-1])):
+                if len(move) == 5 and move[-1] in ["q", "n", "r", "b"]:
+                    print("Promoted!")
+                    # Currently only to queen
                     self.click_to_coordinate(move[2:])
             if output != self.last_output:
                 self.last_output = output
@@ -93,7 +99,7 @@ class LiChessBot():
         """Takes a coordinate of a square in a form like "e2", "b7" and clicks on it."""
         def get_coordinates(loc):
             x, y = ord(loc[0])-97, int(loc[1])-1
-            return x, y if self.color == WHITE else 7-x, 7-y
+            return (x, y) if self.color == WHITE else (7-x, 7-y)
         x, y = get_coordinates(sq)
         ac = ActionChains(self.driver)
         elem = self.driver.find_element_by_id("main-wrap")
@@ -102,7 +108,6 @@ class LiChessBot():
 
     def request_script(self):
         """Sends a get request to scrape the moves on the table."""
-        sleep(REQUEST_INTERVAL)
         page = requests.get2str(self.driver.current_url)
         return BeautifulSoup(page, 'html.parser').find_all("script")[2].string
 
@@ -115,6 +120,7 @@ class LiChessBot():
                             return pc.split(",")[0][1:-1]
                         if pc[-len(key):] == key:
                             key_found = True
+        sleep(REQUEST_INTERVAL)
         script = self.request_script()
         moves, sans, colors = [], [], []
         for i in range(len(script) - len((key := "{\"ply\""))):
@@ -136,9 +142,8 @@ class LiChessBot():
 
 
 if __name__ == "__main__":
+    bot = LiChessBot()
+    bot.login()
     while True:
-        bot = LiChessBot()
-        bot.login()
         bot.enter_match(TIME_FORMAT)
-        bot.driver.close()
-        sleep(10)
+    #bot.driver.close()
