@@ -21,7 +21,6 @@ BLACK = "black"
 
 #TODO: premove
 #TODO: only promotes to a queen
-#TODO: get best move based on a time constraint
 #TODO: look up to stockfish api
 
 class LiChessBot():
@@ -39,20 +38,24 @@ class LiChessBot():
         sleep(SLEEP_TIME_MATCHING)
         self.driver.find_element_by_xpath(f'//*[@data-id="{TIME_FORMAT}"]/div').click()
         sleep(SLEEP_TIME_MATCHING)
+
         # finding the color
-        for i in range(len((script := self.request_script())) - len((key:="\"player\":{\""))):
-            if script[i:i+len(key)] == key:
-                self.color = {"white": WHITE, "black": BLACK}[script[i+19:i+24]]
+        page = self.request_script()
+        sleep(1)
+        for i in range(len(page) - len((key:="\"player\":{\""))):
+            if page[i:i+len(key)] == key:
+                self.color = {"white": WHITE, "black": BLACK}[page[i+19:i+24]]
+
         self._game_loop()
 
     def login(self):
         self.driver.get('https://lichess.org/login')
         sleep(SLEEP_TIME_LOGGING_IN)
         self.driver.find_element_by_xpath('//*[@id="form3-username"]').send_keys(username)
-        sleep(SLEEP_TIME_LOGGING_IN)
         self.driver.find_element_by_xpath('//*[@id="form3-password"]').send_keys(password)
         sleep(SLEEP_TIME_LOGGING_IN)
         self.driver.find_element_by_css_selector(".submit").click()
+        sleep(SLEEP_TIME_LOGGING_IN)
         self.logged_in = True
     
     def _game_loop(self):
@@ -146,4 +149,6 @@ if __name__ == "__main__":
     bot.login()
     while True:
         bot.enter_match(TIME_FORMAT)
+        break
+        sleep(SLEEP_TIME_MATCHING)
     #bot.driver.close()

@@ -1,0 +1,5 @@
+['h3h1', 'Rh1', 'black', 'f2f1n']
+['f2f1n', 'f1=N', 'white']
+
+['g1f1', 'Kf1', 'black', 'a2a1q']
+['a2a1n', 'a1=N', 'white']
